@@ -17,29 +17,38 @@
 # # Imports
 
 import cs7641assn4 as a4
+from numpy import argmax
 
 # # Establish Environment
 
 # +
 id = 'Deterministic-4x4-FrozenLake-v0' # string identifier for environment, arbitrary label
-rH = 0 #-5 # reward for H(ole)
+rH = -1 #-5 # reward for H(ole)
 rG = 1 # 10 # reward for G(oal)
-rF = 0 # reward includes S(tart) and F(rozen)
+rF = -0.2# reward includes S(tart) and F(rozen)
 size = 4 # height and width of square gridworld
 p = 0.8 # if generating a random map probability that a grid will be F(rozen)
 desc = None # frozen_lake.generate_random_map(size=size, p=p)
 map_name = 'x'.join([str(size)]*2) # None
 is_slippery = False
 
+
 epsilon = 1e-8 # convergence threshold for policy/value iteration
 gamma = 0.8 # discount parameter for past policy/value iterations
 max_iter = 10000 # maximum iterations for slowly converging policy/value iteration 
 
+# Qlearning(env, rH=0, rG=1, rF=0, qepsilon=0.1, lr=0.8, gamma=0.95, episodes=10000)
+qepsilon = 0.1 # epsilon value for the Q-learning epsilon greedy strategy
+lr = 0.8 # Q-learning rate
+qgamma = 0.95 # Q-Learning discount factor
+episodes = 10000 # number of Q-learning episodes
+
 # Create Environment
-env = a4.getEnv(id=id,render_initial=True)
+env = a4.getEnv(id=id, rH=rH, rG=rG, rF=rF, desc=desc, map_name=map_name, is_slippery=is_slippery,render_initial=True)
 
 # Display reward at each state
-a4.matprint(a4.print_value(a4.getStateReward(env)))
+print('\n--Reward Values at Each State--')
+a4.matprint(a4.print_value(a4.getStateReward(env),width=size,height=size))
 # -
 
 # # Policy Iteration
@@ -76,10 +85,26 @@ V, epochs = a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_it
 # display value function:
 a4.matprint(a4.print_value(V))
 
-pol = a4.value_to_policy(env, gamma=gamma, V=V)
+pol = a4.value_to_policy(env, V=V, gamma=gamma)
 
 # display policy
 a4.matprint(a4.print_policy(pol, width=size, height=size))
+# -
+
+# # Q-Learning
+
+# +
+Q = a4.Qlearning(env, qepsilon, lr, qgamma, episodes)
+print('--Q with all options--')
+a4.matprint(Q)
+
+maxQ = Q[range(len(Q)),argmax(Q,axis=1)]
+print('\n--argmax(Q) in grid order--')
+a4.matprint(a4.print_value(maxQ))
+
+s, steps = a4.Qlearning_trajectory(env, Q, render=False)
+print('\n--Policy Matrix--')
+a4.matprint(a4.policy_matrix(Q))
 # -
 
 # # Notes
