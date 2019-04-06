@@ -2,7 +2,6 @@ import gym.envs.toy_text.frozen_lake as frozen_lake # I guess `toy_text` is a se
 from gym import make
 from gym.envs.registration import register, registry
 import numpy as np
-import math
 import my_env
 
 ###
@@ -89,7 +88,7 @@ def policy_evaluation(pi, P, R, gamma, n_states):
     return np.linalg.inv((np.eye(n_states) - gamma * p)).dot(r)[:, 0]
 
 def policy_iteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False):
-    n_states, n_actions = env.observation_space.n, env.action_space.n
+    n_states = env.observation_space.n
     
     # initialize arbitrary value function
     V = np.zeros(n_states)
@@ -126,7 +125,7 @@ def policy_iteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False)
 # Value Iteration Functions
 ###
 def valueIteration(env, epsilon, gamma, max_iter=10000, report=True):
-    n_states, n_actions = env.observation_space.n, env.action_space.n
+    n_states = env.observation_space.n
     
     # initialize utilities to 0
     V = np.zeros(n_states)
@@ -191,7 +190,7 @@ def getEnv(id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slipper
 
     if render_initial:
         this_env.render()
-        display(this_env.P[this_env.nS - 1][0])
+        print(this_env.P[this_env.nS - 1][0])
     
     return this_env
 
