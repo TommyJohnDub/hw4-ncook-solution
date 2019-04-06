@@ -63,8 +63,12 @@ a4.matprint(a4.print_policy(pi, width=size, height=size))
 
 # # Value Iteration
 
-# %%timeit
-V = a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=False)
+# ```
+# # %%timeit
+# V, epochs = a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=False)
+# ```
+#
+# 6.38 ms ± 658 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 
 # +
 V, epochs = a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=True)
@@ -99,10 +103,10 @@ a4.matprint(a4.print_policy(pol, width=size, height=size))
 #
 # |ACTION|Value|Symbol|
 # |------|-----|------|
-# |LEFT|0|←|
-# |DOWN | 1|↓|
-# |RIGHT | 2|→|
-# |UP | 3| ↑|
+# |LEFT  | 0   | ←    |
+# |DOWN  | 1   | ↓    |
+# |RIGHT | 2   | →    |
+# |UP    | 3   | ↑    |
 
 # # Sources
 
