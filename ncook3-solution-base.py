@@ -16,22 +16,27 @@
 
 # # Imports
 
+# +
 import cs7641assn4 as a4
 import numpy as np
 import pandas as pd
+import warnings
+
+pd.set_option('display.max_columns', 35)
+# pd.reset_option("display.max_columns")
+# -
 
 # # Establish Environment
 
 # +
-env_id = 'Deterministic-4x4-FrozenLake-v0' # string identifier for environment, arbitrary label
 rH = -1 #-5 # reward for H(ole)
 rG = 1 # 10 # reward for G(oal)
 rF = -0.2# reward includes S(tart) and F(rozen)
-size = 4 # height and width of square gridworld
+size = 8 # height and width of square gridworld
 p = 0.8 # if generating a random map probability that a grid will be F(rozen)
 desc = None # frozen_lake.generate_random_map(size=size, p=p)
 map_name = 'x'.join([str(size)]*2) # None
-is_slippery = False
+is_slippery = True
 
 
 epsilon = 1e-8 # convergence threshold for policy/value iteration
@@ -46,7 +51,7 @@ episodes = 10000 # number of Q-learning episodes
 initial = 0 # value to initialize the Q grid
 
 # Create Environment
-env = a4.getEnv(env_id=env_id, rH=rH, rG=rG, rF=rF, 
+env = a4.getEnv(env_id='hw4-FrozenLake-v0', rH=rH, rG=rG, rF=rF, 
                 desc=desc, map_name=map_name, 
                 is_slippery=is_slippery,render_initial=True)
 
@@ -58,7 +63,7 @@ env_rs = a4.getStateReward(env)
 
 # Display reward at each state
 print('\n--Reward Values at Each State--')
-a4.matprint(a4.print_value(env_rs,width=size,height=size))
+a4.matprint(a4.print_value(env_rs, width=size, height=size))
 # -
 
 # # Policy Iteration
@@ -69,7 +74,7 @@ pi_time = %timeit -o a4.policy_iteration(env, epsilon=epsilon, gamma=gamma, max_
 pi_V, pi_policy, pi_epochs = a4.policy_iteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=True)
 
 # Display values
-a4.matprint(a4.print_value(pi_V))
+a4.matprint(a4.print_value(pi_V, width=size, height=size))
 
 pi_policy_arrows = a4.print_policy(pi_policy, width=size, height=size)
 
@@ -85,7 +90,7 @@ vi_time = %timeit -o a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_it
 vi_V, vi_epochs = a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=True)
 
 # display value function:
-a4.matprint(a4.print_value(vi_V))
+a4.matprint(a4.print_value(vi_V, width=size, height=size))
 
 vi_policy = a4.value_to_policy(env, V=vi_V, gamma=gamma)
 
@@ -105,7 +110,7 @@ a4.matprint(Q)
 
 maxQ = np.max(Q,axis=1)
 print('\n--argmax(Q) in grid order--')
-a4.matprint(a4.print_value(maxQ))
+a4.matprint(a4.print_value(maxQ, width=size, height=size))
 
 Q_policy = a4.Q_to_policy(Q)
 
@@ -147,10 +152,9 @@ Q_s, Q_steps = a4.Qlearning_trajectory(env, Q, render=False)
 # - Code: <https://github.com/Twice22/HandsOnRL>
 # - Tutorial: <https://twice22.github.io/>
 
-a4.policy_matrix(Q)
+# # Save Results to DataFrame
 
-results = pd.DataFrame({'env_id': [env_id],
-                        'rH': [rH], 
+results = pd.DataFrame({'rH': [rH], 
                         'rG': [rG], 
                         'rF': [rF], 
                         'size': [size], 
@@ -165,6 +169,7 @@ results = pd.DataFrame({'env_id': [env_id],
                         'lr': [lr], 
                         'qgamma': [qgamma], 
                         'episodes': [episodes], 
+                        'initial': [initial],
                         'env_desc': [env_desc],
                         'env_rs': [env_rs],
                         'pi_time': [pi_time.average],
@@ -184,3 +189,23 @@ results = pd.DataFrame({'env_id': [env_id],
                         'Q_policy_arrows': [Q_policy_arrows]})
 
 display(results)
+
+# # Save DataFrame to Disk
+
+warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+try:
+    dataset = pd.read_hdf('data.h5', key='dataset', mode='a')
+except FileNotFoundError:
+    results.to_hdf('data.h5', key='dataset', mode='a')
+else:
+    dataset.append(
+        other=results, 
+        ignore_index=True
+        ).to_hdf(
+        path_or_buf='data.h5', 
+        key='dataset', 
+        mode='a')
+
+pd.read_hdf('data.h5', key='dataset', mode='a')
+
+

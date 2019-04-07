@@ -274,18 +274,15 @@ def Qlearning_trajectory(env, Q, max_steps=100, render=True, report=True):
 ###
 
 def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slippery=True, render_initial=True):
-    all_envs = registry.all()
-    env_ids = [env_spec.id for env_spec in all_envs]
 
-    if env_id not in env_ids:
-        register(
-            id=env_id, # name given to this new environment
-            entry_point='my_env:CustomizedFrozenLake', # env entry point
-            kwargs={'rH': rH, 'rG': rG, 'rF': rF, 
-                    'desc': desc,
-                    'map_name': map_name, 
-                    'is_slippery': is_slippery} # argument passed to the env
-        )
+    register(
+        id=env_id, # name given to this new environment
+        entry_point='my_env:CustomizedFrozenLake', # env entry point
+        kwargs={'rH': rH, 'rG': rG, 'rF': rF, 
+                'desc': desc,
+                'map_name': map_name, 
+                'is_slippery': is_slippery} # argument passed to the env
+    )
 
     this_env = make(env_id)
 
