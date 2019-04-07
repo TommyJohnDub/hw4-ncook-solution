@@ -185,10 +185,10 @@ def epsilon_greedy(Q, s, qepsilon, rand_action):
         # act greedily by selecting the best action possible in the current state
         return np.argmax(Q[s, :])
 
-def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000):
+def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0):
     # initialize our Q-table: matrix of size [n_states, n_actions] with zeros
     n_states, n_actions = env.observation_space.n, env.action_space.n
-    Q = np.zeros((n_states, n_actions))
+    Q = np.ones((n_states, n_actions))*initial
 
     # get a single list of state descriptions: 'S', 'H', 'F', 'G'
     desc_states = [ s.astype('<U8')[0] for row in env.desc for s in row ] 
@@ -204,7 +204,7 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000):
             # 4 values: 
             # - the next_state we ended in after executing our action
             # - the reward we get from executing that action
-            # - wether or not the game ended
+            # - whether or not the game ended
             # - the probability of executing our action 
             # (we don't use this information here)
             next_state, reward, terminate, _ = env.step(action)
@@ -233,6 +233,9 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000):
             if terminate:
                 break        
     return Q
+
+def Q_to_policy(Q):
+    return np.argmax(Q, axis=1)
 
 def Qlearning_trajectory(env, Q, max_steps=100, render=True, report=True):
     state = env.reset() # reinitialize the environment
@@ -264,25 +267,19 @@ def Qlearning_trajectory(env, Q, max_steps=100, render=True, report=True):
 
     return state, i
 
-def policy_matrix(Q):
-    table = {0: "←", 1: "↓", 2: "→", 3: "↑"}
-    best_actions = np.argmax(Q, axis=1)
-    policy = np.resize(best_actions, (4,4))
-    
-    # transform using the dictionary
-    return np.vectorize(table.get)(policy)
+
 
 ###
 # Generate a Customized Frozen Lake
 ###
 
-def getEnv(id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slippery=True, render_initial=True):
+def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slippery=True, render_initial=True):
     all_envs = registry.all()
     env_ids = [env_spec.id for env_spec in all_envs]
 
-    if id not in env_ids:
+    if env_id not in env_ids:
         register(
-            id=id, # name given to this new environment
+            id=env_id, # name given to this new environment
             entry_point='my_env:CustomizedFrozenLake', # env entry point
             kwargs={'rH': rH, 'rG': rG, 'rF': rF, 
                     'desc': desc,
@@ -290,7 +287,7 @@ def getEnv(id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slipper
                     'is_slippery': is_slippery} # argument passed to the env
         )
 
-    this_env = make(id)
+    this_env = make(env_id)
 
     if render_initial:
         print('--Board--')
