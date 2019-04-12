@@ -51,7 +51,7 @@ pd.set_option('display.max_columns', 35)
 #  'report': [True],
 #  'display_print': [True]}
 # Import settings, uncomment to read settings from an excel spreadsheet
-settings = pd.read_excel('settings.xlsx').to_dict()
+settings = pd.read_excel('settings_2019-04-12T1043.xlsx').to_dict()
 
 # Determine the number of runs
 n_settings = len(settings['rH'])
