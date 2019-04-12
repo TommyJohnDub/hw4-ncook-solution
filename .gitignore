@@ -5,3 +5,7 @@
 *.docx
 *.pdf
 Value_Policy_Baseline.png
+results.xlsx
+settings.xlsx
+results-analysis.ipynb
+data.h5.old
