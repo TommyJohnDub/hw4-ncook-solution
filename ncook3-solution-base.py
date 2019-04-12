@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import warnings
 
+
 pd.set_option('display.max_columns', 35)
 # pd.reset_option("display.max_columns")
 # -
@@ -29,35 +30,13 @@ pd.set_option('display.max_columns', 35)
 # # Establish Environment
 
 # +
-#desc16 = a4.sixteen_by_sixteen_map()
-
-# +
-#desc16
-# ['SFFFFFHHFFFFFFFF',
-#  'FFFFHFFHFFFFFFHF',
-#  'FHFFFFFHFHFHFFFF',
-#  'HFFHFFFFFFFFFHFH',
-#  'FHFFFFHHFFFHHFHF',
-#  'FHFFHFHFFFFHFFFF',
-#  'FFHFFFFHFFFHHHHF',
-#  'HFHFFFFFFFFFFFFH',
-#  'FFFFFFFFFHFFFFHF',
-#  'FFFFFFHHFHFFFFFH',
-#  'FFHFFFFFFHFFFHFF',
-#  'FFFHHFHFFFFFHFFF',
-#  'FFFFFHFHFFFFHFFF',
-#  'HHHHHFFFHFFHFFFF',
-#  'FHFFHFFFFFFFFFFF',
-#  'FFHFHHFFHFFFFFFG']
-
-# +
 rH = -1 #-5 # reward for H(ole)
 rG = 1 # 10 # reward for G(oal)
 rF = -0.2# reward includes S(tart) and F(rozen)
-size = 4 # height and width of square gridworld
+size = 4 # height and width of square gridworld, [4, 8, 16] are included in cs7641assn4.py 
 p = 0.8 # if generating a random map probability that a grid will be F(rozen)
-desc = None # desc16 # None
-map_name = 'x'.join([str(size)]*2) # None
+map_name = 'x'.join([str(size)]*2) # None, if you want a random map
+desc = a4.MAPS[map_name] # None, if you want a random map
 is_slippery = False
 
 
@@ -73,10 +52,15 @@ episodes = 10000 # number of Q-learning episodes
 initial = 0 # value to initialize the Q grid
 decay = True
 
+# Printing options
+report = True # For cs7641assn4.py policy and value iteration functions
+display_print = True # For this script
+
+# +
 # Create Environment
 env = a4.getEnv(env_id='hw4-FrozenLake-v0', rH=rH, rG=rG, rF=rF, 
-                desc=desc, map_name=map_name, 
-                is_slippery=is_slippery,render_initial=True)
+                desc=desc,  
+                is_slippery=is_slippery, render_initial=True)
 
 # Store a representation of the map
 env_desc = env.desc.astype('<U8')
@@ -84,9 +68,10 @@ env_desc = env.desc.astype('<U8')
 # Store a representation of the state rewards
 env_rs = a4.getStateReward(env)
 
-# Display reward at each state
-print('\n--Reward Values at Each State--')
-a4.matprint(a4.print_value(env_rs, width=size, height=size))
+if display_print:
+    # Display reward at each state
+    print('\n--Reward Values at Each State--')
+    a4.matprint(a4.print_value(env_rs, width=size, height=size))
 # -
 
 # # Policy Iteration
@@ -96,13 +81,16 @@ pi_time = %timeit -o a4.policy_iteration(env, epsilon=epsilon, gamma=gamma, max_
 # +
 pi_V, pi_policy, pi_epochs = a4.policy_iteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=True)
 
-# Display values
-a4.matprint(a4.print_value(pi_V, width=size, height=size))
+
 
 pi_policy_arrows = a4.print_policy(pi_policy, width=size, height=size)
 
-# Display policy
-a4.matprint(pi_policy_arrows)
+if display_print:
+    # Display values
+    a4.matprint(a4.print_value(pi_V, width=size, height=size))
+
+    # Display policy
+    a4.matprint(pi_policy_arrows)
 # -
 
 # # Value Iteration
@@ -112,14 +100,17 @@ vi_time = %timeit -o a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_it
 # +
 vi_V, vi_epochs = a4.valueIteration(env, epsilon=epsilon, gamma=gamma, max_iter=max_iter, report=True)
 
-# display value function:
-a4.matprint(a4.print_value(vi_V, width=size, height=size))
+
 
 vi_policy = a4.value_to_policy(env, V=vi_V, gamma=gamma)
 
 vi_policy_arrows = a4.print_policy(vi_policy, width=size, height=size)
-# display policy
-a4.matprint(vi_policy_arrows)
+
+if display_print:
+    # display value function:
+    a4.matprint(a4.print_value(vi_V, width=size, height=size))
+    # display policy
+    a4.matprint(vi_policy_arrows)
 # -
 
 # # Q-Learning
@@ -127,36 +118,26 @@ a4.matprint(vi_policy_arrows)
 Q_time = %timeit -o a4.Qlearning(env, qepsilon, lr, qgamma, episodes=10000, initial=initial, decay=decay)
 
 # +
-# Q, n_episodes = a4.Qlearning(env, qepsilon, lr, qgamma, episodes=10000, initial=initial)
-# display(Q)
-# display(n_episodes)
-# a4.matprint(a4.print_policy(a4.Q_to_policy(Q), width=size, height=size))
-
-# +
 Q, Q_epochs = a4.Qlearning(env, qepsilon, lr, qgamma, episodes)
-print('--Q with all options--')
-a4.matprint(Q)
 
 maxQ = np.max(Q,axis=1)
-print('\n--argmax(Q) in grid order--')
-a4.matprint(a4.print_value(maxQ, width=size, height=size))
 
 Q_policy = a4.Q_to_policy(Q)
 
 Q_policy_arrows = a4.print_policy(Q_policy, width=size, height=size)
-print('\n--Policy Matrix--')
-a4.matprint(Q_policy_arrows)
-# -
 
-Q_epochs
-
-# +
-#Q_s, Q_steps = a4.Qlearning_trajectory(env, Q, render=False)
+if display_print: 
+    print('--Q with all options--')
+    a4.matprint(Q)
+    print('\n--argmax(Q) in grid order--')
+    a4.matprint(a4.print_value(maxQ, width=size, height=size))
+    print('\n--Policy Matrix--')
+    a4.matprint(Q_policy_arrows)
 # -
 
 # # Notes
 
-# Default rewards are 1 for the G(oal) and 0 for everything else.
+# Default rewards in OpenAI gym Frozen-Lake-v0 are 1 for the G(oal) and 0 for everything else.
 #
 # Maps are drawn according to the following logic
 #
@@ -223,24 +204,30 @@ results = pd.DataFrame({'rH': [rH],
                         'Q_policy': [Q_policy],
                         'Q_policy_arrows': [Q_policy_arrows]})
 
-display(results)
+if display_print: 
+    display(results)
 
 # # Save DataFrame to Disk
 
-warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
-try:
-    dataset = pd.read_hdf('data.h5', key='dataset', mode='a')
-except FileNotFoundError:
-    results.to_hdf('data.h5', key='dataset', mode='a')
-else:
-    dataset.append(
-        other=results, 
-        ignore_index=True
-        ).to_hdf(
-        path_or_buf='data.h5', 
-        key='dataset', 
-        mode='a')
+# Uncomment the cells below to save the results of running this notebook to an HDF5 table.
+#
+# I've commented them out to avoid contaminating the results saved from the `iterate` version of this notebook.
 
-pd.read_hdf('data.h5', key='dataset', mode='a')
+# +
+# warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+# try:
+#     dataset = pd.read_hdf('data.h5', key='dataset', mode='a')
+# except FileNotFoundError:
+#     results.to_hdf('data.h5', key='dataset', mode='a')
+# else:
+#     dataset.append(
+#         other=results, 
+#         ignore_index=True
+#         ).to_hdf(
+#         path_or_buf='data.h5', 
+#         key='dataset', 
+#         mode='a')
 
-
+# +
+# if display_print:
+#     pd.read_hdf('data.h5', key='dataset', mode='a')

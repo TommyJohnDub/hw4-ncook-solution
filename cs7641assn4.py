@@ -1,13 +1,57 @@
 # -*- coding: utf-8 -*-
 import gym.envs.toy_text.frozen_lake as frozen_lake # I guess `toy_text` is a separate package?
 from gym import make
+import gym
 from gym.envs.registration import register, registry
 import numpy as np
+import pandas as pd
 import my_env
 from pprint import pprint
+import warnings
+import xlrd
+
+# See plug_and_chug() for iteration code
+
+# These are the non-random maps
+MAPS = {
+    "4x4": [
+        "SFFF",
+        "FHFH",
+        "FFFH",
+        "HFFG"
+    ],
+    "8x8": [
+        "SFFFFFFF",
+        "FFFFFFFF",
+        "FFFHFFFF",
+        "FFFFFHFF",
+        "FFFHFFFF",
+        "FHHFFFHF",
+        "FHFFHFHF",
+        "FFFHFFFG"
+    ],
+    "16x16" : [
+        'SFFFFFHHFFFFFFFF',
+        'FFFFHFFHFFFFFFHF',
+        'FHFFFFFHFHFHFFFF',
+        'HFFHFFFFFFFFFHFH',
+        'FHFFFFHHFFFHHFHF',
+        'FHFFHFHFFFFHFFFF',
+        'FFHFFFFHFFFHHHHF',
+        'HFHFFFFFFFFFFFFH',
+        'FFFFFFFFFHFFFFHF',
+        'FFFFFFHHFHFFFFFH',
+        'FFHFFFFFFHFFFHFF',
+        'FFFHHFHFFFFFHFFF',
+        'FFFFFHFHFFFFHFFF',
+        'HHHHHFFFHFFHFFFF',
+        'FHFFHFFFFFFFFFFF',
+        'FFHFHHFFHFFFFFFG'
+    ]
+}
 
 ###
-# Generate a 16x16 map and return the description
+# Generate a random 16x16 map and return the description
 ##
 
 def sixteen_by_sixteen_map():
@@ -137,7 +181,7 @@ def policy_iteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False)
 ###
 # Value Iteration Functions
 ###
-def valueIteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=True):
+def valueIteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False):
     n_states = env.observation_space.n
     
     # initialize utilities to 0
@@ -194,7 +238,7 @@ def epsilon_greedy(Q, s, qepsilon, rand_action):
         # act greedily by selecting the best action possible in the current state
         return np.argmax(Q[s, :])
 
-def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0, decay=False):
+def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0, decay=False, report=False):
     # initialize our Q-table: matrix of size [n_states, n_actions] with zeros
     n_states, n_actions = env.observation_space.n, env.action_space.n
     Q = np.ones((n_states, n_actions))*initial
@@ -251,8 +295,11 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0,
         #print(Q_old, '\n', Q, '\n', np.allclose(Q_old, Q))
         
         if np.allclose(Q_old, Q):
+            if report:
+                print("Q-Learning converged after ", episode+1, "epochs")
             break
         Q_old = Q.copy()
+
     return Q, episode+1
 
 def Q_to_policy(Q):
@@ -296,6 +343,9 @@ def Qlearning_trajectory(env, Q, max_steps=100, render=True, report=True):
 
 def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slippery=True, render_initial=True):
 
+    if env_id in gym.envs.registry.env_specs:
+        del gym.envs.registry.env_specs[env_id]
+
     register(
         id=env_id, # name given to this new environment
         entry_point='my_env:CustomizedFrozenLake', # env entry point
@@ -315,5 +365,8 @@ def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_sli
     
     return this_env
 
-# Random nugget
+# Random nuggets
 # env.unwrapped.specstions/52774793/get-name-id-of-a-openai-gym-environment.id # https://stackoverflow.com/que
+# https://github.com/openai/gym/issues/1172
+
+
