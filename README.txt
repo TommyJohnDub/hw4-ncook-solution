@@ -1,10 +1,10 @@
 Code is here: https://github.com/cooknl/hw4-ncook-solution
 
 Requires:
-gym, PyPi
-numpy, Anaconda
-pandas, Anaconda
-pytables, Anaconda
+gym, PyPi, for Frozen Lake environment
+numpy, Anaconda, for MDP and Q-Learning implementations
+pandas, Anaconda, for MDP and Q-Learning implementations
+pytables, Anaconda, for storing results dataframes in HDF5 format
 
 Optional:
 jupytext, conda-forge

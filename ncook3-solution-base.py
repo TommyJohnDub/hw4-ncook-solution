@@ -29,14 +29,36 @@ pd.set_option('display.max_columns', 35)
 # # Establish Environment
 
 # +
+#desc16 = a4.sixteen_by_sixteen_map()
+
+# +
+#desc16
+# ['SFFFFFHHFFFFFFFF',
+#  'FFFFHFFHFFFFFFHF',
+#  'FHFFFFFHFHFHFFFF',
+#  'HFFHFFFFFFFFFHFH',
+#  'FHFFFFHHFFFHHFHF',
+#  'FHFFHFHFFFFHFFFF',
+#  'FFHFFFFHFFFHHHHF',
+#  'HFHFFFFFFFFFFFFH',
+#  'FFFFFFFFFHFFFFHF',
+#  'FFFFFFHHFHFFFFFH',
+#  'FFHFFFFFFHFFFHFF',
+#  'FFFHHFHFFFFFHFFF',
+#  'FFFFFHFHFFFFHFFF',
+#  'HHHHHFFFHFFHFFFF',
+#  'FHFFHFFFFFFFFFFF',
+#  'FFHFHHFFHFFFFFFG']
+
+# +
 rH = -1 #-5 # reward for H(ole)
 rG = 1 # 10 # reward for G(oal)
 rF = -0.2# reward includes S(tart) and F(rozen)
-size = 8 # height and width of square gridworld
+size = 4 # height and width of square gridworld
 p = 0.8 # if generating a random map probability that a grid will be F(rozen)
-desc = None # frozen_lake.generate_random_map(size=size, p=p)
+desc = None # desc16 # None
 map_name = 'x'.join([str(size)]*2) # None
-is_slippery = True
+is_slippery = False
 
 
 epsilon = 1e-8 # convergence threshold for policy/value iteration
@@ -49,6 +71,7 @@ lr = 0.8 # Q-learning rate
 qgamma = 0.95 # Q-Learning discount factor
 episodes = 10000 # number of Q-learning episodes
 initial = 0 # value to initialize the Q grid
+decay = True
 
 # Create Environment
 env = a4.getEnv(env_id='hw4-FrozenLake-v0', rH=rH, rG=rG, rF=rF, 
@@ -101,10 +124,16 @@ a4.matprint(vi_policy_arrows)
 
 # # Q-Learning
 
-Q_time = %timeit -o a4.Qlearning(env, qepsilon, lr, qgamma, episodes)
+Q_time = %timeit -o a4.Qlearning(env, qepsilon, lr, qgamma, episodes=10000, initial=initial, decay=decay)
 
 # +
-Q = a4.Qlearning(env, qepsilon, lr, qgamma, episodes)
+# Q, n_episodes = a4.Qlearning(env, qepsilon, lr, qgamma, episodes=10000, initial=initial)
+# display(Q)
+# display(n_episodes)
+# a4.matprint(a4.print_policy(a4.Q_to_policy(Q), width=size, height=size))
+
+# +
+Q, Q_epochs = a4.Qlearning(env, qepsilon, lr, qgamma, episodes)
 print('--Q with all options--')
 a4.matprint(Q)
 
@@ -119,7 +148,11 @@ print('\n--Policy Matrix--')
 a4.matprint(Q_policy_arrows)
 # -
 
-Q_s, Q_steps = a4.Qlearning_trajectory(env, Q, render=False)
+Q_epochs
+
+# +
+#Q_s, Q_steps = a4.Qlearning_trajectory(env, Q, render=False)
+# -
 
 # # Notes
 
@@ -149,6 +182,7 @@ Q_s, Q_steps = a4.Qlearning_trajectory(env, Q, render=False)
 
 # # Sources
 
+# - Environment: <https://gym.openai.com/envs/FrozenLake-v0/>
 # - Code: <https://github.com/Twice22/HandsOnRL>
 # - Tutorial: <https://twice22.github.io/>
 
@@ -184,6 +218,7 @@ results = pd.DataFrame({'rH': [rH],
                         'vi_policy_arrows': [vi_policy_arrows],
                         'Q_time': [Q_time.average],
                         'Q': [Q],
+                        'Q_epochs': [Q_epochs],
                         'Q_V': [maxQ],
                         'Q_policy': [Q_policy],
                         'Q_policy_arrows': [Q_policy_arrows]})

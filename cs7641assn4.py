@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import gym.envs.toy_text.frozen_lake as frozen_lake # I guess `toy_text` is a separate package?
 from gym import make
 from gym.envs.registration import register, registry
@@ -6,8 +7,16 @@ import my_env
 from pprint import pprint
 
 ###
+# Generate a 16x16 map and return the description
+##
+
+def sixteen_by_sixteen_map():
+    return frozen_lake.generate_random_map(size=16)
+
+
+# ##
 # Utility Functions
-###
+# ##
 
 def getStateReward(env):
     n_states = env.observation_space.n
@@ -71,12 +80,12 @@ def matprint(mat, fmt="g"):
         for i, y in enumerate(x):
             print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
         print("")
-        
-        
-###
+
+
+# ##
 # Policy Iteration Functions
-###
-        
+# ##
+
 # to evaluate the policy, as there is no max in the equation we can just solve
 # the linear system
 def policy_evaluation(pi, P, R, gamma, n_states):
@@ -171,9 +180,9 @@ def value_to_policy(env, V, gamma=0.8):
     
     return policy
 
-###
+# ##
 # Q-Learning Functions
-###
+# ##
 
 def epsilon_greedy(Q, s, qepsilon, rand_action):
     rand = np.random.uniform()
@@ -185,19 +194,26 @@ def epsilon_greedy(Q, s, qepsilon, rand_action):
         # act greedily by selecting the best action possible in the current state
         return np.argmax(Q[s, :])
 
-def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0):
+def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0, decay=False):
     # initialize our Q-table: matrix of size [n_states, n_actions] with zeros
     n_states, n_actions = env.observation_space.n, env.action_space.n
     Q = np.ones((n_states, n_actions))*initial
+    Q_old = Q.copy()
 
     # get a single list of state descriptions: 'S', 'H', 'F', 'G'
     desc_states = [ s.astype('<U8')[0] for row in env.desc for s in row ] 
-    
-    for _ in range(episodes):
+  
+    for episode in range(episodes):
         state = env.reset()
         terminate = False # did the game end ?
+
+        if decay:
+            decay_e = 1
         while True:
             # choose an action using the epsilon greedy strategy
+            if decay:
+                qepsilon = 1.0/decay_e
+                decay_e += 1
             action = epsilon_greedy(Q, state, qepsilon, env.action_space.sample())
 
             # execute the action. The environment provides us
@@ -231,8 +247,13 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0)
             # if we reach the goal state or fall in an hole
             # end the current episode
             if terminate:
-                break        
-    return Q
+                break    
+        #print(Q_old, '\n', Q, '\n', np.allclose(Q_old, Q))
+        
+        if np.allclose(Q_old, Q):
+            break
+        Q_old = Q.copy()
+    return Q, episode+1
 
 def Q_to_policy(Q):
     return np.argmax(Q, axis=1)
@@ -269,9 +290,9 @@ def Qlearning_trajectory(env, Q, max_steps=100, render=True, report=True):
 
 
 
-###
+# ##
 # Generate a Customized Frozen Lake
-###
+# ##
 
 def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slippery=True, render_initial=True):
 
