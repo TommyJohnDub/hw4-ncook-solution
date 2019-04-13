@@ -9,6 +9,7 @@ import my_env
 from pprint import pprint
 import warnings
 import xlrd
+import seaborn as sns; sns.set()
 
 # See plug_and_chug() for iteration code
 
@@ -61,6 +62,10 @@ def sixteen_by_sixteen_map():
 # ##
 # Utility Functions
 # ##
+###
+def draw_heatmap(arrows, values, size):
+    sns.heatmap(values.reshape(size,size), annot=arrows.reshape(size,size), linewidths=.5, fmt='')
+
 
 def getStateReward(env):
     n_states = env.observation_space.n
