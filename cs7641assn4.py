@@ -8,8 +8,9 @@ import pandas as pd
 import my_env
 from pprint import pprint
 import warnings
-import xlrd
+# import xlrd
 import seaborn as sns; sns.set()
+import time
 
 # See plug_and_chug() for iteration code
 
@@ -31,23 +32,27 @@ MAPS = {
         "FHFFHFHF",
         "FFFHFFFG"
     ],
-    "16x16" : [
-        'SFFFFFHHFFFFFFFF',
-        'FFFFHFFHFFFFFFHF',
-        'FHFFFFFHFHFHFFFF',
-        'HFFHFFFFFFFFFHFH',
-        'FHFFFFHHFFFHHFHF',
-        'FHFFHFHFFFFHFFFF',
-        'FFHFFFFHFFFHHHHF',
-        'HFHFFFFFFFFFFFFH',
-        'FFFFFFFFFHFFFFHF',
-        'FFFFFFHHFHFFFFFH',
-        'FFHFFFFFFHFFFHFF',
-        'FFFHHFHFFFFFHFFF',
-        'FFFFFHFHFFFFHFFF',
-        'HHHHHFFFHFFHFFFF',
-        'FHFFHFFFFFFFFFFF',
-        'FFHFHHFFHFFFFFFG'
+    "20x20" : [
+        'SFFFFFHHFFFFFFFFFHHF',
+        'FFFFHFFHFFFFFFHFFHHF',
+        'FHFFFFFHFHFHFFFFFHHF',
+        'HFFHFFFFFFFFFHFHFHHF',
+        'FHFFFFHHFFFHHFHFFHHF',
+        'FHFFHFHFFFFFHHFHFFFF',
+        'FFHFFFFFFHFHFFFHHHHF',
+        'HFHFFFFHHFFFFFFFFFFH',
+        'FFFFFFFFFHFFFFFFFFHF',
+        'FFFFFFHHFHFFFHHHHFFH',
+        'FFHFFFFFFHFFFFHFHHFF',
+        'FFFHHFHFHFHFFFFFHFFF',
+        'FFFFFFHFHHFHFFFFHFFF',
+        'HHHHFHFHHFFFHFFHFFFF',
+        'FHFFHFFHFHFFFFFFFFFF',
+        'FFFHHFHFHFHFFFFFHFFF',
+        'FFFFFHFHFFFFHFFFHFHF',
+        'HHHHHFFFHFFHFFFFHFHF',
+        'FHFFHFFFFFFFFFFFHFHF',
+        'FFHFHHFFHFFFFFFFHFHG'
     ]
 }
 
@@ -68,7 +73,7 @@ def draw_heatmap(arrows, values, size):
 
 
 def getStateReward(env):
-    n_states = env.observation_space.n
+    n_states = env.nS
     Rs = np.empty(n_states)
     Rs.fill(np.nan)
     p = env.P
@@ -80,7 +85,7 @@ def getStateReward(env):
     return Rs    
 
 def getReward(env):
-    n_states, n_actions = env.observation_space.n, env.action_space.n
+    n_states, n_actions = env.nS, env.action_space.n
     
     R = np.zeros((n_states, n_actions))
     for s in range(n_states):
@@ -92,7 +97,7 @@ def getReward(env):
     return R
 
 def getProb(env):
-    n_states, n_actions = env.observation_space.n, env.action_space.n
+    n_states, n_actions = env.nS, env.action_space.n
     
     P = np.zeros((n_states, n_actions, n_states))
     for s in range(n_states):
@@ -150,7 +155,8 @@ def policy_evaluation(pi, P, R, gamma, n_states):
     return np.linalg.inv((np.eye(n_states) - gamma * p)).dot(r)[:, 0]
 
 def policy_iteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False):
-    n_states = env.observation_space.n
+    results = {'time':[], 'delta':[]}
+    n_states = env.nS
     
     # initialize arbitrary value function
     V = np.zeros(n_states)
@@ -163,7 +169,8 @@ def policy_iteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False)
     
     i = 0
     
-    while True and i < max_iter:
+    start = time.time()
+    while i < max_iter:
         V_prev = V.copy()
         
         # evaluate the policy
@@ -173,21 +180,27 @@ def policy_iteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False)
         for s in range(n_states):
             pi[s] = np.argmax(R[s,:] + gamma * P[s, :, :].dot(V)) 
         
-        if np.linalg.norm(V_prev - V) < epsilon:
+        delta = np.linalg.norm(V_prev - V)
+        results['time'].append(time.time()-start)
+        results['delta'].append(V.sum())
+
+        if delta < epsilon:
             if report:
                 print("Policy iteration converged after ", i+1, "epochs")
             break
         
         i += 1
-    
-    return V, pi, i+1
+    df = pd.DataFrame(data=results)
+    return V, pi, df
 
 
 ###
 # Value Iteration Functions
 ###
-def valueIteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False):
-    n_states = env.observation_space.n
+def valueIteration(env, epsilon=1e-8, gamma=0.8, max_iter=1000, report=False):
+
+    results = {'time':[], 'delta':[]}
+    n_states = env.nS
     
     # initialize utilities to 0
     V = np.zeros(n_states)
@@ -196,22 +209,31 @@ def valueIteration(env, epsilon=1e-8, gamma=0.8, max_iter=10000, report=False):
     P = getProb(env)
     
     i = 0
-    while True and i < max_iter:
+    start = time.time()
+    # cumulutive_reward = 0
+    while i < max_iter:
         i += 1
         prev_V = V.copy()
         for s in range(n_states):
             V[s] = max(R[s,:] + gamma * P[s, :, :].dot(V))
 
-        if np.linalg.norm(prev_V - V) <= epsilon:
+        # cumulutive_reward += np.linalg.norm(V)
+        delta = np.linalg.norm(prev_V - V)
+        results['time'].append(time.time()-start)
+        results['delta'].append(V.sum())
+        # results['averge'].append(cumulutive_reward)
+        # results['env'].append(env.unwrapped.spec.id)
+
+        if delta <= epsilon:
             if report:
                 print("Value iteration converged after ", i+1, "epochs")
             break
-    
-    return V, i+1
+    df = pd.DataFrame(data=results)
+    return V, df
 
 # transform value function into a policy
 def value_to_policy(env, V, gamma=0.8):
-    n_states, n_actions = env.observation_space.n, env.action_space.n
+    n_states, n_actions = env.nS, env.action_space.n
     
     policy = np.zeros(n_states, dtype=int)
     for state in range(n_states):
@@ -233,37 +255,44 @@ def value_to_policy(env, V, gamma=0.8):
 # Q-Learning Functions
 # ##
 
-def epsilon_greedy(Q, s, qepsilon, rand_action):
+def epsilon_greedy(Q, s, qepsilon, env):
     rand = np.random.uniform()
     if rand < qepsilon:
         # the sample() method from the environment allows
         # to randomly sample an action from the set of actions
-        return rand_action
+        return env.action_space.sample()
     else:
         # act greedily by selecting the best action possible in the current state
         return np.argmax(Q[s, :])
 
-def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0, decay=False, report=False):
+
+def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, max_iter=1000, episodes=10000, initial=0, decay=False, report=False):
+    df = pd.DataFrame(columns=['time', 'episode', 'iteration', 'qgamma', 'lr', 'qepsilon', 'n_states', 
+        'delta', 'state', 'next_state', 'reward', 'avg_q'])
     # initialize our Q-table: matrix of size [n_states, n_actions] with zeros
-    n_states, n_actions = env.observation_space.n, env.action_space.n
+    n_states, n_actions = env.nS, env.action_space.n
     Q = np.ones((n_states, n_actions))*initial
     Q_old = Q.copy()
 
     # get a single list of state descriptions: 'S', 'H', 'F', 'G'
     desc_states = [ s.astype('<U8')[0] for row in env.desc for s in row ] 
-  
+    
+    start = time.time()
     for episode in range(episodes):
+        # acum_reward = 0
+        
+        cumulutive_reward = 0
         state = env.reset()
-        terminate = False # did the game end ?
 
-        if decay:
-            decay_e = 1
-        while True:
+        terminate = False # did the game end ?
+        i = 0
+        for i in range(max_iter):
             # choose an action using the epsilon greedy strategy
             if decay:
+                decay_e = 1
                 qepsilon = 1.0/decay_e
                 decay_e += 1
-            action = epsilon_greedy(Q, state, qepsilon, env.action_space.sample())
+            action = epsilon_greedy(Q, state, qepsilon, env)
 
             # execute the action. The environment provides us
             # 4 values: 
@@ -273,22 +302,35 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0,
             # - the probability of executing our action 
             # (we don't use this information here)
             next_state, reward, terminate, _ = env.step(action)
+            cumulutive_reward += reward
 
-            if desc_states[next_state] == 'H': # if the agent falls in an hole
-                r = reward # then apply the state reward
-                # the Q-value of the terminal state equals the reward
-                Q[next_state] = np.ones(n_actions) * r
+            # if desc_states[next_state] == 'H': # if the agent falls in an hole
+            #     r = reward # then apply the state reward
+            #     # the Q-value of the terminal state equals the reward
+            #     Q[next_state] = np.ones(n_actions) * r
                 
-            elif desc_states[next_state] in ['S', 'F']: # the agent is in a frozen tile
-                r = reward # give the agent the state reward
+            # elif desc_states[next_state] in ['S', 'F']: # the agent is in a frozen tile
+            #     r = reward # give the agent the state reward
 
-            elif desc_states[next_state] == 'G': # the agent reach the goal state
-                r = reward # give him a big reward
-                # the Q-value of the terminal state equals the reward
-                Q[next_state] = np.ones(n_actions) * r
+            # elif desc_states[next_state] == 'G': # the agent reach the goal state
+            #     r = reward # give him a big reward
+            #     # the Q-value of the terminal state equals the reward
+            #     Q[next_state] = np.ones(n_actions) * r
 
             # Q-learning update
-            Q[state,action] = Q[state,action] + lr * (r + qgamma * np.max(Q[next_state, :]) - Q[state, action])
+            # Q[state,action] = Q[state,action] + lr * (reward + qgamma * np.max(Q[next_state, :]) - Q[state, action])
+            # Q[state,action] = reward + lr * (reward + qgamma * np.max(Q[next_state, :]) - Q[state, action])
+
+            predict = Q[state, action]  
+            target = reward + qgamma * np.max(Q[next_state, :])
+            Q[state, action] = Q[state, action] + lr * (target - predict)
+            # print(Q)
+
+            avg_q = np.sum([r.mean() for r in Q])
+
+            # log the metrics
+            row = [time.time()-start, episode, i, qgamma, lr, qepsilon, env.nS, cumulutive_reward, state, next_state, reward, avg_q]
+            df = df.append(pd.Series(row, index=df.columns), ignore_index=True)
 
             # move the agent to the new state before executing the next iteration
             state = next_state
@@ -296,8 +338,10 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0,
             # if we reach the goal state or fall in an hole
             # end the current episode
             if terminate:
+                Q[next_state] = np.ones(n_actions) * reward
                 break    
         #print(Q_old, '\n', Q, '\n', np.allclose(Q_old, Q))
+
         
         if np.allclose(Q_old, Q):
             if report:
@@ -305,7 +349,7 @@ def Qlearning(env, qepsilon=0.1, lr=0.8, qgamma=0.95, episodes=10000, initial=0,
             break
         Q_old = Q.copy()
 
-    return Q, episode+1
+    return Q, df
 
 def Q_to_policy(Q):
     return np.argmax(Q, axis=1)
@@ -346,7 +390,7 @@ def Qlearning_trajectory(env, Q, max_steps=100, render=True, report=True):
 # Generate a Customized Frozen Lake
 # ##
 
-def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_slippery=True, render_initial=True):
+def getEnv(env_id='default', rH=0, rG=1, rF=0, size=4, map_name='4x4', is_slippery=True, render_initial=True):
 
     if env_id in gym.envs.registry.env_specs:
         del gym.envs.registry.env_specs[env_id]
@@ -355,12 +399,13 @@ def getEnv(env_id='default', rH=0, rG=1, rF=0, desc=None, map_name='4x4', is_sli
         id=env_id, # name given to this new environment
         entry_point='my_env:CustomizedFrozenLake', # env entry point
         kwargs={'rH': rH, 'rG': rG, 'rF': rF, 
-                'desc': desc,
+                'desc': frozen_lake.generate_random_map(size),
                 'map_name': map_name, 
                 'is_slippery': is_slippery} # argument passed to the env
     )
 
     this_env = make(env_id)
+    this_env.seed(5)
 
     if render_initial:
         print('--Board--')
