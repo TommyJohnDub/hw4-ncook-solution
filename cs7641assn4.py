@@ -291,16 +291,18 @@ def Q_to_policy(Q):
 # Generate a Customized Frozen Lake
 # ##
 
-def getEnv(env_id='default', rH=0, rG=1, rF=0, size=4, map_name='4x4', is_slippery=True, render_initial=True):
+def getEnv(env_id='default', rH=0, rG=1, rF=0, size=4, map_name='4x4', is_slippery=True, render_initial=True, desc=None):
 
     if env_id in gym.envs.registry.env_specs:
         del gym.envs.registry.env_specs[env_id]
+
+    nap_desc = frozen_lake.generate_random_map(size) if not desc else desc
 
     register(
         id=env_id, # name given to this new environment
         entry_point='my_env:CustomizedFrozenLake', # env entry point
         kwargs={'rH': rH, 'rG': rG, 'rF': rF, 
-                'desc': frozen_lake.generate_random_map(size),
+                'desc': nap_desc,
                 'map_name': map_name, 
                 'is_slippery': is_slippery} # argument passed to the env
     )
